@@ -381,7 +381,6 @@ export class ToolExecutor {
   ): Promise<SuccessfulToolCall> {
     let { truncatedContent: content, outputFile } =
       await this.truncateOutputIfNeeded(call, toolResult.llmContent);
-
     const toolName = call.request.originalRequestName || call.request.name;
     const callId = call.request.callId;
 
@@ -412,6 +411,7 @@ export class ToolExecutor {
           }),
         );
       } else {
+        // If the content is not truncated, we don't need the temporary file.
         try {
           await fsPromises.unlink(toolResult.fullOutputFilePath);
         } catch (error) {
