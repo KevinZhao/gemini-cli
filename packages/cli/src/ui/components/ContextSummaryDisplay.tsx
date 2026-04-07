@@ -49,7 +49,7 @@ export const ContextSummaryDisplay: React.FC<ContextSummaryDisplayProps> = ({
     }
     return `${openFileCount} open file${
       openFileCount > 1 ? 's' : ''
-    } (ctrl+g to view)`;
+    } (f4 to view)`;
   })();
 
   const geminiMdText = (() => {
