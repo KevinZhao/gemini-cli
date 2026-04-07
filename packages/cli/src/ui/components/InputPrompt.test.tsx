@@ -318,6 +318,7 @@ describe('InputPrompt', () => {
       transformationsByLine: [],
       getOffset: vi.fn().mockReturnValue(0),
       pastedContent: {},
+      viewportHeight: 1,
     } as unknown as TextBuffer;
 
     mockShellHistory = {
@@ -398,6 +399,7 @@ describe('InputPrompt', () => {
     vi.mocked(clipboardy.read).mockResolvedValue('');
 
     props = {
+      maxAvailableWidth: 80,
       onQueueMessage: vi.fn(),
 
       buffer: mockBuffer,
@@ -409,6 +411,7 @@ describe('InputPrompt', () => {
         getTargetDir: () => path.join('test', 'project', 'src'),
         getVimMode: () => false,
         getUseBackgroundColor: () => true,
+        getUseTerminalBuffer: () => true,
         getTerminalBackground: () => undefined,
         getWorkspaceContext: () => ({
           getDirectories: () => ['/test/project/src'],
@@ -2370,6 +2373,7 @@ describe('InputPrompt', () => {
           mockBuffer.lines = text.split('\n');
           mockBuffer.allVisualLines = text.split('\n');
           mockBuffer.viewportVisualLines = text.split('\n');
+          mockBuffer.viewportHeight = mockBuffer.allVisualLines.length;
           mockBuffer.visualCursor = visualCursor as [number, number];
           mockBuffer.visualToLogicalMap = visualToLogicalMap as Array<
             [number, number]
@@ -2391,6 +2395,7 @@ describe('InputPrompt', () => {
         mockBuffer.lines = text.split('\n');
         mockBuffer.allVisualLines = text.split('\n');
         mockBuffer.viewportVisualLines = text.split('\n');
+        mockBuffer.viewportHeight = mockBuffer.allVisualLines.length;
         mockBuffer.visualCursor = [1, 0]; // cursor on the blank line
         mockBuffer.visualToLogicalMap = [
           [0, 0],

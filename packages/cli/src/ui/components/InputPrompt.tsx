@@ -5,7 +5,14 @@
  */
 
 import type React from 'react';
-import { useCallback, useEffect, useState, useRef, useMemo } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useState,
+  useRef,
+  useMemo,
+  Fragment,
+} from 'react';
 import clipboardy from 'clipboardy';
 import { Box, Text, useStdout, type DOMElement } from 'ink';
 import { SuggestionsDisplay, MAX_WIDTH } from './SuggestionsDisplay.js';
@@ -105,6 +112,7 @@ export type ScrollableItem =
   | { type: 'ghostLine'; ghostLine: string; index: number };
 
 export interface InputPromptProps {
+  maxAvailableWidth: number;
   onSubmit: (value: string) => void;
   onClearScreen: () => void;
   config: Config;
@@ -194,6 +202,7 @@ export function tryTogglePasteExpansion(buffer: TextBuffer): boolean {
 }
 
 export const InputPrompt: React.FC<InputPromptProps> = ({
+  maxAvailableWidth,
   onSubmit,
   onClearScreen,
   config,
@@ -1820,24 +1829,45 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
                 height={Math.min(buffer.viewportHeight, scrollableData.length)}
                 width="100%"
               >
-                <ScrollableList
-                  ref={listRef}
-                  hasFocus={focus}
-                  data={scrollableData}
-                  renderItem={renderItem}
-                  estimatedItemHeight={() => 1}
-                  keyExtractor={(item) =>
-                    item.type === 'visualLine'
-                      ? `line-${item.absoluteVisualIdx}`
-                      : `ghost-${item.index}`
-                  }
-                  width="100%"
-                  backgroundColor={listBackgroundColor}
-                  containerHeight={Math.min(
-                    buffer.viewportHeight,
-                    scrollableData.length,
-                  )}
-                />
+                {isAlternateBuffer ? (
+                  <ScrollableList
+                    ref={listRef}
+                    hasFocus={focus}
+                    data={scrollableData}
+                    renderItem={renderItem}
+                    estimatedItemHeight={() => 1}
+                    fixedItemHeight={true}
+                    keyExtractor={(item) =>
+                      item.type === 'visualLine'
+                        ? `line-${item.absoluteVisualIdx}`
+                        : `ghost-${item.index}`
+                    }
+                    width={maxAvailableWidth}
+                    backgroundColor={listBackgroundColor}
+                    containerHeight={Math.min(
+                      buffer.viewportHeight,
+                      scrollableData.length,
+                    )}
+                  />
+                ) : (
+                  scrollableData
+                    .slice(
+                      buffer.visualScrollRow,
+                      buffer.visualScrollRow + buffer.viewportHeight,
+                    )
+                    .map((item, index) => {
+                      const actualIndex = buffer.visualScrollRow + index;
+                      const key =
+                        item.type === 'visualLine'
+                          ? `line-${item.absoluteVisualIdx}`
+                          : `ghost-${item.index}`;
+                      return (
+                        <Fragment key={key}>
+                          {renderItem({ item, index: actualIndex })}
+                        </Fragment>
+                      );
+                    })
+                )}
               </Box>
             )}
           </Box>
