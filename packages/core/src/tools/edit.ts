@@ -25,7 +25,7 @@ import {
 import { buildFilePathArgsPattern } from '../policy/utils.js';
 import type { MessageBus } from '../confirmation-bus/message-bus.js';
 import { ToolErrorType } from './tool-error.js';
-import { makeRelative, shortenPath } from '../utils/paths.js';
+import { makeRelative, shortenPath, isSubpath } from '../utils/paths.js';
 import { isNodeError } from '../utils/errors.js';
 import { correctPath } from '../utils/pathCorrector.js';
 import type { Config } from '../config/config.js';
@@ -464,8 +464,14 @@ class EditToolInvocation
       () => this.config.getApprovalMode(),
     );
     if (this.config.isPlanMode()) {
-      const safeFilename = path.basename(this.params.file_path);
-      this.resolvedPath = path.join(this.config.getPlansDir(), safeFilename);
+      const plansDir = this.config.getPlansDir();
+      const resolvedPlanPath = path.resolve(plansDir, this.params.file_path);
+      if (!isSubpath(plansDir, resolvedPlanPath)) {
+        throw new Error(
+          `Security violation: plan path (${this.params.file_path}) must be within the designated plans directory (${plansDir}).`,
+        );
+      }
+      this.resolvedPath = resolvedPlanPath;
     } else if (!path.isAbsolute(this.params.file_path)) {
       const result = correctPath(this.params.file_path, this.config);
       if (result.success) {
@@ -1050,7 +1056,13 @@ export class EditTool
     }
 
     let resolvedPath: string;
-    if (!path.isAbsolute(params.file_path)) {
+    if (this.config.isPlanMode()) {
+      const plansDir = this.config.getPlansDir();
+      resolvedPath = path.resolve(plansDir, params.file_path);
+      if (!isSubpath(plansDir, resolvedPath)) {
+        return `Security violation: plan path (${params.file_path}) must be within the designated plans directory (${plansDir}).`;
+      }
+    } else if (!path.isAbsolute(params.file_path)) {
       const result = correctPath(params.file_path, this.config);
       if (result.success) {
         resolvedPath = result.correctedPath;

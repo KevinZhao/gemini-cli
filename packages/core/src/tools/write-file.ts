@@ -27,7 +27,7 @@ import {
 } from './tools.js';
 import { buildFilePathArgsPattern } from '../policy/utils.js';
 import { ToolErrorType } from './tool-error.js';
-import { makeRelative, shortenPath } from '../utils/paths.js';
+import { makeRelative, shortenPath, isSubpath } from '../utils/paths.js';
 import { getErrorMessage, isNodeError } from '../utils/errors.js';
 import { ensureCorrectFileContent } from '../utils/editCorrector.js';
 import { detectLineEnding } from '../utils/textUtils.js';
@@ -167,8 +167,14 @@ class WriteFileToolInvocation extends BaseToolInvocation<
     );
 
     if (this.config.isPlanMode()) {
-      const safeFilename = path.basename(this.params.file_path);
-      this.resolvedPath = path.join(this.config.getPlansDir(), safeFilename);
+      const plansDir = this.config.getPlansDir();
+      const resolvedPlanPath = path.resolve(plansDir, this.params.file_path);
+      if (!isSubpath(plansDir, resolvedPlanPath)) {
+        throw new Error(
+          `Security violation: plan path (${this.params.file_path}) must be within the designated plans directory (${plansDir}).`,
+        );
+      }
+      this.resolvedPath = resolvedPlanPath;
     } else {
       this.resolvedPath = path.resolve(
         this.config.getTargetDir(),
@@ -493,7 +499,16 @@ export class WriteFileTool
       return `Missing or empty "file_path"`;
     }
 
-    const resolvedPath = path.resolve(this.config.getTargetDir(), filePath);
+    let resolvedPath: string;
+    if (this.config.isPlanMode()) {
+      const plansDir = this.config.getPlansDir();
+      resolvedPath = path.resolve(plansDir, filePath);
+      if (!isSubpath(plansDir, resolvedPath)) {
+        return `Security violation: plan path (${filePath}) must be within the designated plans directory (${plansDir}).`;
+      }
+    } else {
+      resolvedPath = path.resolve(this.config.getTargetDir(), filePath);
+    }
 
     const validationError = this.config.validatePathAccess(resolvedPath);
     if (validationError) {
