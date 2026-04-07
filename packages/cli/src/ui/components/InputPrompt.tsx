@@ -1265,8 +1265,9 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
       }
 
       if (keyMatchers[Command.DEPRECATED_OPEN_EXTERNAL_EDITOR](key)) {
+        const cmdKey = formatCommand(Command.OPEN_EXTERNAL_EDITOR);
         appEvents.emit(AppEvent.TransientMessage, {
-          message: 'Use Ctrl+G to open the external editor.',
+          message: `Use ${cmdKey} to open the external editor.`,
           type: TransientMessageType.Hint,
         });
         return true;
